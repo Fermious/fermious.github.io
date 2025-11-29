@@ -1,0 +1,38 @@
+<!-- Display GoatCounter pageviews in footer -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const footerPv = document.getElementById('footer-pageviews');
+    const footerTotal = document.getElementById('footer-totalviews');
+
+    if (footerPv !== null && footerTotal !== null) {
+      // Get current page path (empty string for homepage)
+      const uri = location.pathname.replace(/\/$/, '');
+      
+      // Fetch page-specific views
+      const pageUrl = `https://{{ site.analytics.goatcounter.id }}.goatcounter.com/counter/${encodeURIComponent(uri)}.json`;
+      
+      fetch(pageUrl)
+        .then((response) => response.json())
+        .then((data) => {
+          const count = data.count.replace(/\D/g, '');
+          footerPv.innerText = new Intl.NumberFormat().format(count);
+        })
+        .catch((error) => {
+          footerPv.innerText = '1';
+        });
+      
+      // Fetch total site views
+      const totalUrl = `https://{{ site.analytics.goatcounter.id }}.goatcounter.com/counter/TOTAL.json`;
+      
+      fetch(totalUrl)
+        .then((response) => response.json())
+        .then((data) => {
+          const count = data.count.replace(/\D/g, '');
+          footerTotal.innerText = new Intl.NumberFormat().format(count);
+        })
+        .catch((error) => {
+          footerTotal.innerText = '1';
+        });
+    }
+  });
+</script>

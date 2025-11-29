@@ -1,0 +1,119 @@
+<!-- The Footer -->
+
+<footer
+  aria-label="Site Info"
+  class="
+    d-flex flex-column justify-content-center text-muted
+    flex-lg-row justify-content-lg-between align-items-lg-center pb-lg-3
+  "
+>
+  <p>
+    {{- '©' }}
+    <time>{{ 'now' | date: '%Y' }}</time>
+
+    {% if site.social.links %}
+      <a href="{{ site.social.links[0] }}">{{ site.social.name }}</a>.
+    {% else %}
+      <em class="fst-normal">{{ site.social.name }}</em>.
+    {% endif %}
+
+    {% if site.data.locales[include.lang].copyright.brief %}
+      <span
+        data-bs-toggle="tooltip"
+        data-bs-placement="top"
+        title="{{ site.data.locales[include.lang].copyright.verbose }}"
+      >
+        {{- site.data.locales[include.lang].copyright.brief -}}
+      </span>
+    {% endif %}
+  </p>
+
+  <!-- Page views counter -->
+  {% if site.pageviews.provider and site.analytics[site.pageviews.provider].id %}
+    <p class="pageviews-display text-muted small">
+      <i class="fas fa-eye fa-fw"></i>
+      <span id="footer-pageviews">
+        <i class="fas fa-spinner fa-spin"></i>
+      </span> / 
+      <span id="footer-totalviews">
+        <i class="fas fa-spinner fa-spin"></i>
+      </span>
+      (<span id="footer-percentage">
+        <i class="fas fa-spinner fa-spin"></i>
+      </span>%)
+    </p>
+    
+    <!-- Include the pageview counter script -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const pv = document.getElementById('footer-pageviews');
+        const totalPv = document.getElementById('footer-totalviews');
+        const percentPv = document.getElementById('footer-percentage');
+        
+        let pageCount = 0;
+        let totalCount = 0;
+
+        if (pv !== null) {
+          const uri = location.pathname.replace(/\/$/, '');
+          const url = `https://{{ site.analytics.goatcounter.id }}.goatcounter.com/counter/${encodeURIComponent(uri)}.json`;
+
+          fetch(url)
+            .then((response) => response.json())
+            .then((data) => {
+              pageCount = parseInt(data.count.replace(/\D/g, '')) || 1;
+              pv.innerText = new Intl.NumberFormat().format(pageCount);
+              updatePercentage();
+            })
+            .catch((error) => {
+              pageCount = 1;
+              pv.innerText = '1';
+              updatePercentage();
+            });
+        }
+
+        if (totalPv !== null) {
+          const totalUrl = `https://{{ site.analytics.goatcounter.id }}.goatcounter.com/counter/TOTAL.json`;
+
+          fetch(totalUrl)
+            .then((response) => response.json())
+            .then((data) => {
+              totalCount = parseInt(data.count.replace(/\D/g, '')) || 1;
+              totalPv.innerText = new Intl.NumberFormat().format(totalCount);
+              updatePercentage();
+            })
+            .catch((error) => {
+              totalCount = 1;
+              totalPv.innerText = '1';
+              updatePercentage();
+            });
+        }
+        
+        function updatePercentage() {
+          if (pageCount > 0 && totalCount > 0 && percentPv !== null) {
+            const percentage = ((pageCount / totalCount) * 100).toFixed(2);
+            percentPv.innerText = percentage;
+          }
+        }
+      });
+    </script>
+  {% endif %}
+
+  <p>
+    {%- capture _platform -%}
+      <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a>
+    {%- endcapture -%}
+
+    {%- capture _theme -%}
+      <a
+        data-bs-toggle="tooltip"
+        data-bs-placement="top"
+        title="v{{ theme.version }}"
+        href="https://github.com/cotes2020/jekyll-theme-chirpy"
+        target="_blank"
+        rel="noopener"
+      >Chirpy</a>
+    {%- endcapture -%}
+
+    {{ site.data.locales[include.lang].meta | replace: ':PLATFORM', _platform | replace: ':THEME', _theme }}
+  </p>
+</footer>

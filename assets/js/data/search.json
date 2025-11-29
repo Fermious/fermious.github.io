@@ -1,0 +1,37 @@
+---
+layout: compress
+swcache: true
+---
+
+[
+  {% for post in site.posts %}
+  {
+    "title": {{ post.title | jsonify }},
+    "url": {{ post.url | relative_url | jsonify }},
+    "categories": {{ post.categories | join: ', ' | jsonify }},
+    "tags": {{ post.tags | join: ', ' | jsonify }},
+    "date": {{ post.date | jsonify }},
+    "content": {% include post-description.html json=true %}
+  }{% if site.bs_physics.size > 0 or site.ms_quantum.size > 0 %},{% endif %}
+  {% endfor %}
+  {% for course in site.bs_physics %}
+  {
+    "title": {{ course.code | append: ' - ' | append: course.title | jsonify }},
+    "url": {{ course.url | relative_url | jsonify }},
+    "categories": "BS Physics",
+    "tags": {% if course.prerequisites %}{{ course.prerequisites | jsonify }}{% else %}""{% endif %},
+    "date": "",
+    "content": {{ course.description | default: course.content | strip_html | truncate: 200 | jsonify }}
+  }{% unless forloop.last %},{% endunless %}{% if site.ms_quantum.size > 0 and forloop.last %},{% endif %}
+  {% endfor %}
+  {% for course in site.ms_quantum %}
+  {
+    "title": {{ course.code | append: ' - ' | append: course.title | jsonify }},
+    "url": {{ course.url | relative_url | jsonify }},
+    "categories": "MS Quantum Computing",
+    "tags": {% if course.prerequisites %}{{ course.prerequisites | jsonify }}{% else %}""{% endif %},
+    "date": "",
+    "content": {{ course.description | default: course.content | strip_html | truncate: 200 | jsonify }}
+  }{% unless forloop.last %},{% endunless %}
+  {% endfor %}
+]

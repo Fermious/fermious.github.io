@@ -1,0 +1,159 @@
+---
+layout: default
+---
+
+<article class="px-1">
+  <header>
+    <h1 data-toc-skip>{{ page.title }}</h1>
+    {% if page.description %}
+      <p class="post-desc fw-light mb-4">{{ page.description }}</p>
+    {% endif %}
+  </header>
+
+  <!-- Password Form -->
+  <div id="password-form" class="encrypted-form">
+    <div class="encrypted-icon">
+      <i class="fas fa-lock fa-3x"></i>
+    </div>
+    <p class="encrypted-message">This post is encrypted. Enter the password to decrypt.</p>
+    <div class="input-group">
+      <input type="password" id="password-input" class="form-control" placeholder="Password" autofocus>
+      <button id="decrypt-btn" class="btn btn-primary" type="button">
+        <i class="fas fa-unlock"></i> Decrypt
+      </button>
+    </div>
+    <p id="error-message" class="error-message" style="display: none;">
+      <i class="fas fa-exclamation-triangle"></i> Incorrect password
+    </p>
+  </div>
+
+  <!-- Decrypted Content Container -->
+  <div id="decrypted-content" class="post-content" style="display: none;"></div>
+
+  <!-- Encrypted Content (hidden, used by JS) -->
+  <div id="encrypted-data" style="display: none;">{{ content }}</div>
+</article>
+
+<!-- CryptoJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+
+<script>
+(function() {
+  const form = document.getElementById('password-form');
+  const input = document.getElementById('password-input');
+  const btn = document.getElementById('decrypt-btn');
+  const error = document.getElementById('error-message');
+  const encryptedData = document.getElementById('encrypted-data').textContent.trim();
+  const decryptedContainer = document.getElementById('decrypted-content');
+
+  function decrypt() {
+    const password = input.value;
+    if (!password) return;
+
+    try {
+      // CryptoJS AES decrypt
+      const decrypted = CryptoJS.AES.decrypt(encryptedData, password);
+      const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
+
+      if (!plaintext) {
+        throw new Error('Decryption failed');
+      }
+
+      // Success - show decrypted content
+      form.style.display = 'none';
+      decryptedContainer.innerHTML = plaintext;
+      decryptedContainer.style.display = 'block';
+
+      // Store in session (optional - for page refresh)
+      sessionStorage.setItem('decrypt_' + window.location.pathname, password);
+
+    } catch (e) {
+      // Wrong password
+      error.style.display = 'block';
+      input.classList.add('is-invalid');
+      input.select();
+    }
+  }
+
+  // Event listeners
+  btn.addEventListener('click', decrypt);
+  input.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      decrypt();
+    }
+  });
+  input.addEventListener('input', function() {
+    error.style.display = 'none';
+    input.classList.remove('is-invalid');
+  });
+
+  // Check sessionStorage for previously entered password
+  const savedPassword = sessionStorage.getItem('decrypt_' + window.location.pathname);
+  if (savedPassword) {
+    input.value = savedPassword;
+    decrypt();
+  }
+})();
+</script>
+
+<style>
+.encrypted-form {
+  text-align: center;
+  padding: 3rem 1rem;
+  margin: 2rem auto;
+  max-width: 400px;
+}
+
+.encrypted-icon {
+  color: var(--link-color);
+  margin-bottom: 1.5rem;
+  opacity: 0.8;
+}
+
+.encrypted-message {
+  color: var(--text-muted-color);
+  margin-bottom: 1.5rem;
+}
+
+.encrypted-form .input-group {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.encrypted-form .form-control {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.encrypted-form .form-control:focus {
+  background-color: var(--card-bg);
+  border-color: var(--link-color);
+  color: var(--text-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--link-color-rgb), 0.25);
+}
+
+.encrypted-form .form-control.is-invalid {
+  border-color: #dc3545;
+}
+
+.encrypted-form .btn-primary {
+  background-color: var(--link-color);
+  border-color: var(--link-color);
+}
+
+.error-message {
+  color: #dc3545;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+#decrypted-content {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</style>

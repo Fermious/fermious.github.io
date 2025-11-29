@@ -1,0 +1,277 @@
+<style>
+/* Modern Button Styles for UMQ Website */
+.btn.btn-outline-secondary,
+.content .btn.btn-outline-secondary,
+.card-body .btn.btn-outline-secondary,
+.content a.btn.btn-outline-secondary,
+.card-body a.btn.btn-outline-secondary,
+.btn.btn-outline-secondary:link,
+.btn.btn-outline-secondary:visited {
+  position: relative !important;
+  color: var(--text-color, #6c757d) !important;
+  background: rgba(108, 117, 125, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(108, 117, 125, 0.15) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+  padding: 0.5rem 1.25rem !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  border-radius: 0.5rem !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  overflow: hidden !important;
+}
+
+/* Hover state - only on devices that support hovering */
+@media (hover: hover) {
+  .btn.btn-outline-secondary:hover,
+  .content .btn.btn-outline-secondary:hover,
+  .card-body .btn.btn-outline-secondary:hover,
+  .content a.btn.btn-outline-secondary:hover,
+  .card-body a.btn.btn-outline-secondary:hover {
+    color: #fff !important;
+    background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+    border-color: transparent !important;
+    text-decoration: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06) !important;
+  }
+}
+
+/* Active/Click state */
+.btn.btn-outline-secondary:active {
+  transform: scale(0.98) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Focus state for accessibility */
+.btn.btn-outline-secondary:focus-visible {
+  outline: 2px solid var(--link-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* Remove focus outline for mouse users */
+.btn.btn-outline-secondary:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* Large button variant */
+.btn.btn-outline-secondary.btn-lg,
+.content .btn.btn-outline-secondary.btn-lg,
+.card-body .btn.btn-outline-secondary.btn-lg,
+.content a.btn.btn-outline-secondary.btn-lg,
+.card-body a.btn.btn-outline-secondary.btn-lg {
+  padding: 0.75rem 1.75rem !important;
+  font-size: 1.25rem !important;
+  border-radius: 0.625rem !important;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .btn.btn-outline-secondary,
+  .content .btn.btn-outline-secondary,
+  .card-body .btn.btn-outline-secondary,
+  .content a.btn.btn-outline-secondary,
+  .card-body a.btn.btn-outline-secondary,
+  .btn.btn-outline-secondary:link,
+  .btn.btn-outline-secondary:visited {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-color, #e0e0e0) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  @media (hover: hover) {
+    .btn.btn-outline-secondary:hover,
+    .content .btn.btn-outline-secondary:hover,
+    .card-body .btn.btn-outline-secondary:hover,
+    .content a.btn.btn-outline-secondary:hover,
+    .card-body a.btn.btn-outline-secondary:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.2) !important;
+      color: #fff !important;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    }
+  }
+}
+
+/* Button icons */
+.btn i {
+  font-size: 0.9em !important;
+}
+
+/* Icon spacing when followed by text */
+.btn i.me-2 {
+  margin-right: 0.5rem !important;
+}
+
+/* No margin for standalone icons or last child */
+.btn i:only-child,
+.btn i:last-child:not(.me-2) {
+  margin-right: 0 !important;
+}
+
+/* Button Group Styles - Mobile First */
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  align-items: stretch;
+}
+
+/* Standalone buttons (single button centered) */
+.btn-standalone {
+  display: inline-flex !important;
+  margin: 0 auto !important;
+}
+
+.button-group .btn {
+  width: 100%;
+  margin: 0 !important;
+}
+
+/* Event button group - center aligned */
+.button-group--event {
+  align-items: center;
+}
+
+.button-group--event .btn {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+/* Navigation button group */
+.button-group--nav {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.button-group--nav .btn {
+  flex: 1 1 auto;
+  min-width: 150px;
+}
+
+/* Join button group */
+.button-group--join,
+.join-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  align-items: stretch;
+}
+
+.button-group--join .btn,
+.join-links .btn {
+  width: 100%;
+  margin: 0 !important;
+}
+
+/* Tablet and up (576px+) */
+@media (min-width: 576px) {
+  .button-group {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .button-group .btn {
+    width: auto;
+    min-width: 140px;
+  }
+  
+  .button-group--event .btn {
+    min-width: 160px;
+    max-width: none;
+  }
+  
+  .button-group--join,
+  .join-links {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .button-group--join .btn,
+  .join-links .btn {
+    width: auto;
+    min-width: 160px;
+  }
+}
+
+/* Desktop (768px+) */
+@media (min-width: 768px) {
+  /* Keep modern padding values */
+  .btn.btn-outline-secondary,
+  .content .btn.btn-outline-secondary,
+  .card-body .btn.btn-outline-secondary {
+    font-size: 1rem !important;
+    /* Modern padding preserved */
+  }
+  
+  .btn.btn-outline-secondary.btn-lg,
+  .content .btn.btn-outline-secondary.btn-lg,
+  .card-body .btn.btn-outline-secondary.btn-lg {
+    font-size: 1.25rem !important;
+    /* Modern padding preserved */
+  }
+  
+  .button-group {
+    gap: 1rem;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 375px) {
+  .btn.btn-outline-secondary,
+  .content .btn.btn-outline-secondary,
+  .card-body .btn.btn-outline-secondary {
+    font-size: 0.9rem !important;
+    padding: 0.45rem 1rem !important;
+  }
+  
+  .btn.btn-outline-secondary.btn-lg,
+  .content .btn.btn-outline-secondary.btn-lg,
+  .card-body .btn.btn-outline-secondary.btn-lg {
+    font-size: 1rem !important;
+    padding: 0.625rem 1.25rem !important;
+  }
+  
+  /* Hide button text on very small screens, show only icons */
+  .button-group .btn span {
+    display: none;
+  }
+  
+  .button-group .btn i.me-2 {
+    margin-right: 0 !important;
+  }
+  
+  .button-group .btn i {
+    font-size: 1.1em !important;
+  }
+}
+
+/* Ensure button containers don't clip */
+.card-body .mt-3,
+.text-center {
+  overflow: visible !important;
+}
+
+/* Remove conflicting margins in button groups */
+.button-group .btn.me-2,
+.button-group .btn.btn-outline-secondary.me-2 {
+  margin-right: 0 !important;
+}
+</style>
