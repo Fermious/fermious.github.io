@@ -2,17 +2,22 @@
 "exec" "$(dirname $0)/.venv/bin/python3" "$0" "$@"
 # Above trick: bash runs first line, which exec's the venv python with this script
 """
-Encrypt Jekyll posts for use with the encrypted.html layout.
+Encrypt/Decrypt Jekyll posts for use with the encrypted.html layout.
 Produces CryptoJS-compatible AES encryption.
 
 Usage:
+    # Encrypt
     ./encrypt-post.py <file1> [file2] [file3] ...
     ./encrypt-post.py _drafts/*
+
+    # Decrypt
+    ./encrypt-post.py -d <encrypted_post>
+    ./encrypt-post.py --decrypt _posts/2024-01-01-secret.md
 
 Examples:
     ./encrypt-post.py _drafts/secret-post.md
     ./encrypt-post.py _drafts/*.md
-    ./encrypt-post.py _drafts/post1.md _drafts/post2.md
+    ./encrypt-post.py --decrypt _posts/2024-01-01-my-post.md
 """
 
 import sys
@@ -41,6 +46,13 @@ except ImportError:
     HAS_MARKDOWN = False
     print("Warning: markdown module not found. Content will not be converted to HTML.")
     print("Install with: pip3 install markdown")
+
+# Try to import html2text for HTML→markdown conversion
+try:
+    import html2text
+    HAS_HTML2TEXT = True
+except ImportError:
+    HAS_HTML2TEXT = False
 
 
 def evp_bytes_to_key(password: bytes, salt: bytes, key_len: int = 32, iv_len: int = 16):
@@ -78,6 +90,37 @@ def encrypt_cryptojs_format(plaintext: str, password: str) -> str:
     return base64.b64encode(openssl_data).decode('utf-8')
 
 
+def decrypt_cryptojs_format(ciphertext_b64: str, password: str) -> str:
+    """
+    Decrypt CryptoJS-compatible AES encryption.
+    Returns plaintext string.
+    """
+    # Decode base64
+    data = base64.b64decode(ciphertext_b64)
+
+    # Check OpenSSL format: "Salted__" + 8-byte salt + ciphertext
+    if not data.startswith(b'Salted__'):
+        raise ValueError("Invalid format: missing 'Salted__' prefix")
+
+    salt = data[8:16]
+    ciphertext = data[16:]
+
+    # Derive key and IV
+    key, iv = evp_bytes_to_key(password.encode('utf-8'), salt)
+
+    # Decrypt
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    padded = cipher.decrypt(ciphertext)
+
+    # Remove PKCS7 padding
+    padding_len = padded[-1]
+    if padding_len > 16:
+        raise ValueError("Invalid padding")
+    plaintext = padded[:-padding_len]
+
+    return plaintext.decode('utf-8')
+
+
 def parse_front_matter(content: str):
     """
     Parse YAML front matter from markdown file.
@@ -109,6 +152,47 @@ def markdown_to_html(text: str) -> str:
     return f"<pre>{text}</pre>"
 
 
+def html_to_markdown(html: str) -> tuple:
+    """
+    Convert HTML to markdown.
+    Returns (markdown_text, list_of_warnings).
+    """
+    warnings = []
+
+    if not HAS_HTML2TEXT:
+        warnings.append("html2text not installed - returning raw HTML")
+        return html, warnings
+
+    # Detect potential formatting loss before conversion
+    if '<pre' in html or '<code' in html:
+        code_blocks = len(re.findall(r'<pre[^>]*>', html))
+        if code_blocks > 0:
+            warnings.append(f"{code_blocks} code block(s) - syntax highlighting may be lost")
+
+    if '<table' in html:
+        tables = len(re.findall(r'<table[^>]*>', html))
+        warnings.append(f"{tables} table(s)")
+
+    if '<figure' in html or '<figcaption' in html:
+        figures = len(re.findall(r'<figure[^>]*>', html))
+        warnings.append(f"{figures} figure(s) with captions")
+
+    if re.search(r'class="[^"]*"', html) or '<style' in html:
+        warnings.append("custom CSS/styling")
+
+    if '<sup' in html and 'footnote' in html.lower():
+        warnings.append("footnotes")
+
+    # Convert
+    h = html2text.HTML2Text()
+    h.ignore_links = False
+    h.ignore_images = False
+    h.body_width = 0  # Don't wrap lines
+    md = h.handle(html)
+
+    return md.strip(), warnings
+
+
 def get_output_path(input_file: str) -> str:
     """Generate output path in _posts/ directory."""
     basename = os.path.basename(input_file)
@@ -121,6 +205,35 @@ def get_output_path(input_file: str) -> str:
         # Add today's date
         date_prefix = datetime.now().strftime('%Y-%m-%d')
         return os.path.join('_posts', f"{date_prefix}-{basename}")
+
+
+def get_draft_output_path(input_file: str) -> str:
+    """Generate output path in _drafts/ directory (strips date prefix)."""
+    basename = os.path.basename(input_file)
+
+    # Remove date prefix if present
+    date_pattern = r'^\d{4}-\d{2}-\d{2}-'
+    basename = re.sub(date_pattern, '', basename)
+
+    return os.path.join('_drafts', basename)
+
+
+def find_original_draft(encrypted_file: str) -> str:
+    """
+    Look for original draft file that matches the encrypted post.
+    Returns path if found, None otherwise.
+    """
+    basename = os.path.basename(encrypted_file)
+
+    # Remove date prefix
+    date_pattern = r'^\d{4}-\d{2}-\d{2}-'
+    draft_name = re.sub(date_pattern, '', basename)
+
+    draft_path = os.path.join('_drafts', draft_name)
+
+    if os.path.exists(draft_path):
+        return draft_path
+    return None
 
 
 def encrypt_file(input_file: str, password: str) -> tuple:
@@ -171,22 +284,100 @@ def encrypt_file(input_file: str, password: str) -> tuple:
         return (None, False, str(e))
 
 
+def decrypt_file(input_file: str, password: str) -> tuple:
+    """
+    Decrypt a single encrypted post.
+    Returns (output_file, success, message, warnings).
+    """
+    warnings = []
+
+    try:
+        # Check if original draft exists
+        original_draft = find_original_draft(input_file)
+        if original_draft:
+            output_file = get_draft_output_path(input_file)
+            # Just copy the original
+            import shutil
+            shutil.copy2(original_draft, output_file)
+            return (output_file, True, "Restored from original draft", [])
+
+        # Read encrypted file
+        with open(input_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Parse front matter and encrypted body
+        front_matter, encrypted_body = parse_front_matter(content)
+
+        if not encrypted_body.strip():
+            return (None, False, "Empty content", [])
+
+        # Extract base64 ciphertext (strip whitespace)
+        ciphertext = encrypted_body.strip()
+
+        # Decrypt
+        html_content = decrypt_cryptojs_format(ciphertext, password)
+
+        # Convert HTML to markdown
+        md_content, conv_warnings = html_to_markdown(html_content)
+        warnings.extend(conv_warnings)
+
+        # Update front matter (remove encrypted layout)
+        if front_matter.get('layout') == 'encrypted':
+            del front_matter['layout']
+
+        # Reconstruct front matter string
+        front_matter_lines = ['---']
+        for key, value in front_matter.items():
+            front_matter_lines.append(f"{key}: {value}")
+        front_matter_lines.append('---')
+        front_matter_str = '\n'.join(front_matter_lines)
+
+        # Generate output path
+        output_file = get_draft_output_path(input_file)
+
+        # Write output file
+        output_content = f"{front_matter_str}\n\n{md_content}\n"
+
+        os.makedirs(os.path.dirname(output_file) or '.', exist_ok=True)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(output_content)
+
+        return (output_file, True, f"{len(ciphertext)} → {len(md_content)} chars", warnings)
+
+    except ValueError as e:
+        if "padding" in str(e).lower() or "invalid" in str(e).lower():
+            return (None, False, "Wrong password or corrupted data", [])
+        return (None, False, str(e), [])
+    except Exception as e:
+        return (None, False, str(e), [])
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
 
-    # Collect all input files (shell already expands globs, but handle manually too)
+    # Check for decrypt flag
+    decrypt_mode = False
+    args = sys.argv[1:]
+
+    if args[0] in ['-d', '--decrypt']:
+        decrypt_mode = True
+        args = args[1:]
+
+    if not args:
+        print("Error: No files specified")
+        sys.exit(1)
+
+    # Collect all input files
     input_files = []
-    for arg in sys.argv[1:]:
+    for arg in args:
         if '*' in arg or '?' in arg:
-            # Manual glob expansion
             expanded = glob.glob(arg)
             input_files.extend(expanded)
         elif os.path.isfile(arg):
             input_files.append(arg)
         elif os.path.isdir(arg):
-            # If directory, get all .md files
             input_files.extend(glob.glob(os.path.join(arg, '*.md')))
 
     # Filter to only .md files
@@ -199,28 +390,40 @@ def main():
     # Remove duplicates and sort
     input_files = sorted(set(input_files))
 
-    print(f"\n📁 Found {len(input_files)} file(s) to encrypt:")
+    mode_str = "decrypt" if decrypt_mode else "encrypt"
+    print(f"\n📁 Found {len(input_files)} file(s) to {mode_str}:")
     for f in input_files:
         print(f"   • {f}")
 
-    # Get password once for all files
+    # Get password
     print()
-    password = getpass.getpass("Enter encryption password: ")
-    password_confirm = getpass.getpass("Confirm password: ")
+    password = getpass.getpass(f"Enter {'decryption' if decrypt_mode else 'encryption'} password: ")
 
-    if password != password_confirm:
-        print("Error: Passwords do not match!")
-        sys.exit(1)
+    if not decrypt_mode:
+        password_confirm = getpass.getpass("Confirm password: ")
+        if password != password_confirm:
+            print("Error: Passwords do not match!")
+            sys.exit(1)
 
     if len(password) < 4:
         print("Error: Password too short (minimum 4 characters)")
         sys.exit(1)
 
-    # Encrypt all files
-    print(f"\n🔐 Encrypting...\n")
+    # Process files
+    icon = "🔓" if decrypt_mode else "🔐"
+    print(f"\n{icon} {'Decrypting' if decrypt_mode else 'Encrypting'}...\n")
+
     results = []
+    all_warnings = []
+
     for input_file in input_files:
-        output_file, success, message = encrypt_file(input_file, password)
+        if decrypt_mode:
+            output_file, success, message, warnings = decrypt_file(input_file, password)
+            all_warnings.extend(warnings)
+        else:
+            output_file, success, message = encrypt_file(input_file, password)
+            warnings = []
+
         results.append((input_file, output_file, success, message))
 
         if success:
@@ -233,9 +436,15 @@ def main():
     failed = len(results) - successful
 
     print(f"\n{'─' * 40}")
-    print(f"✓ Encrypted: {successful}  ✗ Failed: {failed}")
+    print(f"✓ {'Decrypted' if decrypt_mode else 'Encrypted'}: {successful}  ✗ Failed: {failed}")
 
-    if successful > 0:
+    # Show warnings for decrypt mode
+    if decrypt_mode and all_warnings:
+        print(f"\n⚠️  Formatting warnings:")
+        for w in all_warnings:
+            print(f"   • {w}")
+
+    if not decrypt_mode and successful > 0:
         print(f"\n⚠️  Remember: Only commit _posts/, not _drafts/!")
 
 
