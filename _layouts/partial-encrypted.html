@@ -1,0 +1,220 @@
+---
+layout: default
+---
+
+<article class="px-1">
+  <header>
+    <h1 data-toc-skip>{{ page.title }}</h1>
+    {% if page.description %}
+      <p class="post-desc fw-light mb-4">{{ page.description }}</p>
+    {% endif %}
+  </header>
+
+  <!-- Post content with encrypted bars inline -->
+  <div class="content post-content">
+    {{ content }}
+  </div>
+</article>
+
+<!-- CryptoJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<script src="/assets/js/partial-decrypt.js"></script>
+
+<style>
+/* Encrypted Bar - Compact single-line style */
+.encrypted-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  margin: 1.5rem 0;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.03) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 3px solid var(--link-color);
+  border-radius: 0 10px 10px 0;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-mode="dark"] .encrypted-bar {
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.06) 0%,
+    rgba(255,255,255,0.02) 100%);
+}
+
+.encrypted-bar:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+/* Left side - icon and title */
+.bar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.bar-icon {
+  color: var(--link-color);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.bar-title {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right side - password input and button */
+.bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.bar-right input {
+  width: 140px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.bar-right input::placeholder {
+  color: var(--text-muted-color);
+  font-size: 0.8rem;
+}
+
+.bar-right input:focus {
+  border-color: var(--link-color);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  width: 180px;
+}
+
+.bar-right input.shake {
+  animation: barShake 0.4s ease;
+  border-color: #ef4444;
+}
+
+@keyframes barShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+/* Unlock button */
+.bar-unlock {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--link-color) 0%, #667eea 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.bar-unlock:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.bar-unlock:active {
+  transform: scale(0.98);
+}
+
+/* Error indicator */
+.bar-error {
+  display: none;
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
+}
+
+.bar-error.show {
+  display: inline;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Unlocked state */
+.encrypted-bar.unlocked {
+  opacity: 0;
+  transform: translateY(-10px);
+  height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Content container */
+.encrypted-content {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.encrypted-content.show {
+  max-height: 2000px;
+  opacity: 1;
+  animation: contentReveal 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes contentReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Mobile responsive */
+@media (max-width: 576px) {
+  .encrypted-bar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .bar-left {
+    width: 100%;
+  }
+
+  .bar-right {
+    width: 100%;
+  }
+
+  .bar-right input {
+    flex: 1;
+    width: auto;
+  }
+
+  .bar-right input:focus {
+    width: auto;
+  }
+}
+</style>

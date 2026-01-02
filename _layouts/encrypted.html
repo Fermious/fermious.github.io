@@ -11,24 +11,33 @@ layout: default
   </header>
 
   <!-- Password Form -->
-  <div id="password-form" class="encrypted-form">
-    <div class="encrypted-icon">
-      <i class="fas fa-lock fa-3x"></i>
-    </div>
-    <p class="encrypted-message">This post is encrypted. Enter the password to decrypt.</p>
-    <div class="input-group">
-      <input type="password" id="password-input" class="form-control" placeholder="Password" autofocus>
-      <button id="decrypt-btn" class="btn btn-primary" type="button">
-        <i class="fas fa-unlock"></i> Decrypt
+  <div id="password-form" class="encrypted-card">
+    <div class="encrypted-card-inner">
+      <div class="lock-icon">
+        <i class="fas fa-lock"></i>
+      </div>
+      <h3 class="encrypted-title">Protected Content</h3>
+      <p class="encrypted-subtitle">Enter the password to unlock this post</p>
+
+      <div class="password-field">
+        <i class="fas fa-key field-icon"></i>
+        <input type="password" id="password-input" placeholder="Password" autofocus>
+      </div>
+
+      <button id="decrypt-btn" class="unlock-btn" type="button">
+        <i class="fas fa-unlock-alt"></i>
+        <span>Unlock</span>
       </button>
+
+      <p id="error-message" class="error-msg">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>Incorrect password</span>
+      </p>
     </div>
-    <p id="error-message" class="error-message" style="display: none;">
-      <i class="fas fa-exclamation-triangle"></i> Incorrect password
-    </p>
   </div>
 
   <!-- Decrypted Content Container -->
-  <div id="decrypted-content" class="post-content" style="display: none;"></div>
+  <div id="decrypted-content" class="post-content"></div>
 
   <!-- Encrypted Content (hidden, used by JS) -->
   <div id="encrypted-data" style="display: none;">{{ content | strip_html | strip }}</div>
@@ -39,59 +48,206 @@ layout: default
 <script src="/assets/js/decrypt.js"></script>
 
 <style>
-.encrypted-form {
+/* Encrypted Card */
+.encrypted-card {
+  max-width: 380px;
+  margin: 3rem auto;
+  perspective: 1000px;
+}
+
+.encrypted-card-inner {
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.1) 0%,
+    rgba(255,255,255,0.05) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
   text-align: center;
-  padding: 3rem 1rem;
-  margin: 2rem auto;
-  max-width: 400px;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.4s ease;
 }
 
-.encrypted-icon {
-  color: var(--link-color);
-  margin-bottom: 1.5rem;
-  opacity: 0.8;
+[data-mode="dark"] .encrypted-card-inner {
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.02) 100%);
+  border-color: rgba(255,255,255,0.1);
 }
 
-.encrypted-message {
-  color: var(--text-muted-color);
-  margin-bottom: 1.5rem;
+/* Lock Icon */
+.lock-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, var(--link-color) 0%, #667eea 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.encrypted-form .input-group {
-  max-width: 300px;
-  margin: 0 auto;
+.lock-icon i {
+  font-size: 1.75rem;
+  color: #fff;
 }
 
-.encrypted-form .form-control {
-  background-color: var(--card-bg);
-  border-color: var(--border-color);
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6);
+  }
+}
+
+/* Text */
+.encrypted-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
   color: var(--text-color);
 }
 
-.encrypted-form .form-control:focus {
-  background-color: var(--card-bg);
-  border-color: var(--link-color);
-  color: var(--text-color);
-  box-shadow: 0 0 0 0.2rem rgba(var(--link-color-rgb), 0.25);
-}
-
-.encrypted-form .form-control.is-invalid {
-  border-color: #dc3545;
-}
-
-.encrypted-form .btn-primary {
-  background-color: var(--link-color);
-  border-color: var(--link-color);
-}
-
-.error-message {
-  color: #dc3545;
-  margin-top: 1rem;
+.encrypted-subtitle {
   font-size: 0.9rem;
+  color: var(--text-muted-color);
+  margin-bottom: 1.75rem;
 }
 
+/* Password Field */
+.password-field {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.password-field .field-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted-color);
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.password-field input {
+  width: 100%;
+  padding: 14px 16px 14px 44px;
+  font-size: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.password-field input::placeholder {
+  color: var(--text-muted-color);
+}
+
+.password-field input:focus {
+  border-color: var(--link-color);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+}
+
+.password-field input:focus + .field-icon,
+.password-field:focus-within .field-icon {
+  color: var(--link-color);
+}
+
+.password-field input.shake {
+  animation: shake 0.5s ease;
+  border-color: #ef4444;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+  20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+
+/* Unlock Button */
+.unlock-btn {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--link-color) 0%, #667eea 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.unlock-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.unlock-btn:active {
+  transform: translateY(0);
+}
+
+/* Error Message */
+.error-msg {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 1rem;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+}
+
+.error-msg.show {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Unlock Animation */
+.encrypted-card.unlocking .encrypted-card-inner {
+  transform: scale(0.95) rotateX(10deg);
+  opacity: 0;
+}
+
+/* Decrypted Content */
 #decrypted-content {
-  animation: fadeIn 0.3s ease-in;
+  display: none;
+  animation: reveal 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#decrypted-content.show {
+  display: block;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {

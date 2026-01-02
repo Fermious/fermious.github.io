@@ -19,32 +19,42 @@
         throw new Error('Decryption failed');
       }
 
-      // Success - show decrypted content
-      form.style.display = 'none';
-      decryptedContainer.innerHTML = plaintext;
-      decryptedContainer.style.display = 'block';
+      // Success - animate unlock
+      form.classList.add('unlocking');
 
-      // Store in session (optional - for page refresh)
+      setTimeout(() => {
+        form.style.display = 'none';
+        decryptedContainer.innerHTML = plaintext;
+        decryptedContainer.classList.add('show');
+      }, 400);
+
+      // Store in session (for page refresh)
       sessionStorage.setItem('decrypt_' + window.location.pathname, password);
 
     } catch (e) {
-      // Wrong password
-      error.style.display = 'block';
-      input.classList.add('is-invalid');
+      // Wrong password - shake and show error
+      input.classList.add('shake');
+      error.classList.add('show');
+
+      setTimeout(() => {
+        input.classList.remove('shake');
+      }, 500);
+
       input.select();
     }
   }
 
   // Event listeners
   btn.addEventListener('click', decrypt);
+
   input.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
       decrypt();
     }
   });
+
   input.addEventListener('input', function() {
-    error.style.display = 'none';
-    input.classList.remove('is-invalid');
+    error.classList.remove('show');
   });
 
   // Check sessionStorage for previously entered password
