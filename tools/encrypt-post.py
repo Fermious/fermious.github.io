@@ -124,25 +124,86 @@ def decrypt_cryptojs_format(ciphertext_b64: str, password: str) -> str:
 def parse_front_matter(content: str):
     """
     Parse YAML front matter from markdown file.
-    Returns (front_matter_dict, body_content).
+    Returns (front_matter_dict, front_matter_raw_str, body_content).
+
+    The dict contains only root-level keys for simple lookups.
+    The raw string preserves the original structure including nested YAML.
     """
     pattern = r'^---\s*\n(.*?)\n---\s*\n(.*)$'
     match = re.match(pattern, content, re.DOTALL)
 
     if not match:
-        return {}, content
+        return {}, '', content
 
     front_matter_str = match.group(1)
     body = match.group(2)
 
-    # Simple YAML parsing (key: value)
+    # Simple YAML parsing for root-level keys only (for lookups)
     front_matter = {}
     for line in front_matter_str.split('\n'):
-        if ':' in line:
+        # Only parse root-level keys (lines that don't start with whitespace)
+        if line and not line[0].isspace() and ':' in line:
             key, value = line.split(':', 1)
             front_matter[key.strip()] = value.strip()
 
-    return front_matter, body
+    return front_matter, front_matter_str, body
+
+
+def update_front_matter(raw_front_matter: str, updates: dict = None, removals: list = None) -> str:
+    """
+    Update/add/remove keys in front matter while preserving structure.
+    Only modifies root-level keys. Nested content under a key is preserved or removed with it.
+
+    Args:
+        raw_front_matter: The original front matter string (without --- delimiters)
+        updates: Dict of {key: value} to update or add
+        removals: List of keys to remove
+
+    Returns:
+        Updated front matter string
+    """
+    updates = updates or {}
+    removals = removals or []
+
+    lines = raw_front_matter.split('\n')
+    result_lines = []
+    skip_until_root = False
+    updated_keys = set()
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+
+        # Check if this is a root-level key (no leading whitespace)
+        if line and not line[0].isspace() and ':' in line:
+            key = line.split(':', 1)[0].strip()
+
+            if key in removals:
+                # Skip this line and any indented lines that follow
+                i += 1
+                while i < len(lines) and lines[i] and lines[i][0].isspace():
+                    i += 1
+                continue
+
+            if key in updates:
+                # Replace this line with updated value
+                result_lines.append(f"{key}: {updates[key]}")
+                updated_keys.add(key)
+                # Skip any indented lines that follow (nested content is replaced)
+                i += 1
+                while i < len(lines) and lines[i] and lines[i][0].isspace():
+                    i += 1
+                continue
+
+        result_lines.append(line)
+        i += 1
+
+    # Add any new keys that weren't updates to existing ones
+    for key, value in updates.items():
+        if key not in updated_keys:
+            result_lines.append(f"{key}: {value}")
+
+    return '\n'.join(result_lines)
 
 
 def markdown_to_html(text: str) -> str:
@@ -286,7 +347,7 @@ def encrypt_partial_file(input_file: str, passwords: list) -> tuple:
             content = f.read()
 
         # Parse front matter and body
-        front_matter, body = parse_front_matter(content)
+        front_matter, front_matter_raw, body = parse_front_matter(content)
 
         if not body.strip():
             return (None, False, "Empty content")
@@ -366,18 +427,11 @@ def encrypt_partial_file(input_file: str, passwords: list) -> tuple:
         # Generate output path
         output_file = get_output_path(input_file)
 
-        # Build output front matter
-        front_matter['layout'] = 'partial-encrypted'
-
-        # Reconstruct front matter string
-        front_matter_lines = ['---']
-        for key, value in front_matter.items():
-            front_matter_lines.append(f"{key}: {value}")
-        front_matter_lines.append('---')
-        front_matter_str = '\n'.join(front_matter_lines)
+        # Update front matter with layout (preserves nested YAML structure)
+        updated_front_matter = update_front_matter(front_matter_raw, {'layout': 'partial-encrypted'})
 
         # Write output file
-        output_content = f"{front_matter_str}\n\n{html_result}\n"
+        output_content = f"---\n{updated_front_matter}\n---\n\n{html_result}\n"
 
         os.makedirs(os.path.dirname(output_file) or '.', exist_ok=True)
         with open(output_file, 'w', encoding='utf-8') as f:
@@ -400,7 +454,7 @@ def encrypt_file(input_file: str, password: str) -> tuple:
             content = f.read()
 
         # Parse front matter and body
-        front_matter, body = parse_front_matter(content)
+        front_matter, front_matter_raw, body = parse_front_matter(content)
 
         if not body.strip():
             return (None, False, "Empty content")
@@ -414,18 +468,11 @@ def encrypt_file(input_file: str, password: str) -> tuple:
         # Encrypt the HTML content
         encrypted = encrypt_cryptojs_format(html_body, password)
 
-        # Build output front matter
-        front_matter['layout'] = 'encrypted'
-
-        # Reconstruct front matter string
-        front_matter_lines = ['---']
-        for key, value in front_matter.items():
-            front_matter_lines.append(f"{key}: {value}")
-        front_matter_lines.append('---')
-        front_matter_str = '\n'.join(front_matter_lines)
+        # Update front matter with layout (preserves nested YAML structure)
+        updated_front_matter = update_front_matter(front_matter_raw, {'layout': 'encrypted'})
 
         # Write output file
-        output_content = f"{front_matter_str}\n\n{encrypted}\n"
+        output_content = f"---\n{updated_front_matter}\n---\n\n{encrypted}\n"
 
         os.makedirs(os.path.dirname(output_file) or '.', exist_ok=True)
         with open(output_file, 'w', encoding='utf-8') as f:
@@ -458,7 +505,7 @@ def decrypt_partial_file(input_file: str, passwords: list) -> tuple:
             content = f.read()
 
         # Parse front matter and HTML body
-        front_matter, html_body = parse_front_matter(content)
+        front_matter, front_matter_raw, html_body = parse_front_matter(content)
 
         if not html_body.strip():
             return (None, False, "Empty content", [])
@@ -523,22 +570,14 @@ def decrypt_partial_file(input_file: str, passwords: list) -> tuple:
         md_result, conv_warnings = html_to_markdown(result)
         warnings.extend(conv_warnings)
 
-        # Update front matter
-        if front_matter.get('layout') == 'partial-encrypted':
-            del front_matter['layout']
-
-        # Reconstruct front matter string
-        front_matter_lines = ['---']
-        for key, value in front_matter.items():
-            front_matter_lines.append(f"{key}: {value}")
-        front_matter_lines.append('---')
-        front_matter_str = '\n'.join(front_matter_lines)
+        # Update front matter - remove layout (preserves nested YAML structure)
+        updated_front_matter = update_front_matter(front_matter_raw, removals=['layout'])
 
         # Generate output path
         output_file = get_draft_output_path(input_file)
 
         # Write output file
-        output_content = f"{front_matter_str}\n\n{md_result}\n"
+        output_content = f"---\n{updated_front_matter}\n---\n\n{md_result}\n"
 
         os.makedirs(os.path.dirname(output_file) or '.', exist_ok=True)
         with open(output_file, 'w', encoding='utf-8') as f:
@@ -572,7 +611,7 @@ def decrypt_file(input_file: str, password: str) -> tuple:
             content = f.read()
 
         # Parse front matter and encrypted body
-        front_matter, encrypted_body = parse_front_matter(content)
+        front_matter, front_matter_raw, encrypted_body = parse_front_matter(content)
 
         if not encrypted_body.strip():
             return (None, False, "Empty content", [])
@@ -587,22 +626,14 @@ def decrypt_file(input_file: str, password: str) -> tuple:
         md_content, conv_warnings = html_to_markdown(html_content)
         warnings.extend(conv_warnings)
 
-        # Update front matter (remove encrypted layout)
-        if front_matter.get('layout') == 'encrypted':
-            del front_matter['layout']
-
-        # Reconstruct front matter string
-        front_matter_lines = ['---']
-        for key, value in front_matter.items():
-            front_matter_lines.append(f"{key}: {value}")
-        front_matter_lines.append('---')
-        front_matter_str = '\n'.join(front_matter_lines)
+        # Update front matter - remove layout (preserves nested YAML structure)
+        updated_front_matter = update_front_matter(front_matter_raw, removals=['layout'])
 
         # Generate output path
         output_file = get_draft_output_path(input_file)
 
         # Write output file
-        output_content = f"{front_matter_str}\n\n{md_content}\n"
+        output_content = f"---\n{updated_front_matter}\n---\n\n{md_content}\n"
 
         os.makedirs(os.path.dirname(output_file) or '.', exist_ok=True)
         with open(output_file, 'w', encoding='utf-8') as f:
@@ -623,7 +654,7 @@ def get_file_layout(filepath: str) -> str:
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
-        front_matter, _ = parse_front_matter(content)
+        front_matter, _, _ = parse_front_matter(content)
         return front_matter.get('layout', '')
     except:
         return ''
@@ -756,7 +787,7 @@ def main():
             # Encryption - check for :::encrypted blocks
             with open(input_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            _, body = parse_front_matter(content)
+            _, _, body = parse_front_matter(content)
             blocks = find_encrypted_blocks(body)
 
             if blocks:
