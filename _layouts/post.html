@@ -177,3 +177,9 @@ script_includes:
   </div>
   <!-- div.post-tail-wrapper -->
 </article>
+
+{% if page.has_encrypted_sections %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+  <script src="/assets/js/partial-decrypt.js"></script>
+  {% include partial-encrypt-styles.html %}
+{% endif %}

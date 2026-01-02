@@ -427,8 +427,8 @@ def encrypt_partial_file(input_file: str, passwords: list) -> tuple:
         # Generate output path
         output_file = get_output_path(input_file)
 
-        # Update front matter with layout (preserves nested YAML structure)
-        updated_front_matter = update_front_matter(front_matter_raw, {'layout': 'partial-encrypted'})
+        # Add has_encrypted_sections flag (keep original layout intact)
+        updated_front_matter = update_front_matter(front_matter_raw, {'has_encrypted_sections': 'true'})
 
         # Write output file
         output_content = f"---\n{updated_front_matter}\n---\n\n{html_result}\n"
@@ -570,8 +570,8 @@ def decrypt_partial_file(input_file: str, passwords: list) -> tuple:
         md_result, conv_warnings = html_to_markdown(result)
         warnings.extend(conv_warnings)
 
-        # Update front matter - remove layout (preserves nested YAML structure)
-        updated_front_matter = update_front_matter(front_matter_raw, removals=['layout'])
+        # Update front matter - remove has_encrypted_sections flag (preserves nested YAML structure)
+        updated_front_matter = update_front_matter(front_matter_raw, removals=['has_encrypted_sections'])
 
         # Generate output path
         output_file = get_draft_output_path(input_file)
@@ -658,6 +658,17 @@ def get_file_layout(filepath: str) -> str:
         return front_matter.get('layout', '')
     except:
         return ''
+
+
+def has_encrypted_sections(filepath: str) -> bool:
+    """Check if a file has encrypted sections (partial encryption)."""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        front_matter, _, _ = parse_front_matter(content)
+        return front_matter.get('has_encrypted_sections', '').lower() == 'true'
+    except:
+        return False
 
 
 def count_encrypted_blocks_in_file(filepath: str) -> int:
@@ -763,10 +774,8 @@ def main():
         print(f"   Processing: {os.path.basename(input_file)}")
 
         if decrypt_mode:
-            # Check if partial-encrypted
-            layout = get_file_layout(input_file)
-
-            if layout == 'partial-encrypted':
+            # Check if partial encryption (has_encrypted_sections flag)
+            if has_encrypted_sections(input_file):
                 # Partial decryption
                 num_blocks = count_encrypted_blocks_in_file(input_file)
                 print(f"   Found {num_blocks} encrypted block(s)")

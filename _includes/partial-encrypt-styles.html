@@ -1,25 +1,3 @@
----
-layout: default
----
-
-<article class="px-1">
-  <header>
-    <h1 data-toc-skip>{{ page.title }}</h1>
-    {% if page.description %}
-      <p class="post-desc fw-light mb-4">{{ page.description }}</p>
-    {% endif %}
-  </header>
-
-  <!-- Post content with encrypted bars inline -->
-  <div class="content post-content">
-    {{ content }}
-  </div>
-</article>
-
-<!-- CryptoJS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-<script src="/assets/js/partial-decrypt.js"></script>
-
 <style>
 /* Encrypted Bar - Compact single-line style */
 .encrypted-bar {

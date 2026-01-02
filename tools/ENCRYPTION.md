@@ -8,7 +8,8 @@ Encrypt blog posts so only readers with the password can view the content. Suppo
 |------|---------|
 | `tools/encrypt-post.py` | Python script for encrypting/decrypting posts |
 | `_layouts/encrypted.html` | Layout for fully encrypted posts |
-| `_layouts/partial-encrypted.html` | Layout for partially encrypted posts |
+| `_layouts/post.html` | Standard post layout (includes partial encryption support) |
+| `_includes/partial-encrypt-styles.html` | CSS for encrypted section bars |
 | `assets/js/decrypt.js` | Browser decryption for full encryption |
 | `assets/js/partial-decrypt.js` | Browser decryption for partial encryption |
 
@@ -66,7 +67,7 @@ Run the same command:
 The script will:
 1. Detect the `:::encrypted` blocks
 2. Prompt for a password for each block
-3. Output to `_posts/` with `layout: partial-encrypted`
+3. Output to `_posts/` with `has_encrypted_sections: true` (keeps original layout)
 
 ### Custom Title and Hint
 
